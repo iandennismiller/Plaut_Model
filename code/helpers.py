@@ -2,12 +2,15 @@
 helpers.py
 
 Description: Helper Functions for Plaut Model
-  - to calculate the accuracy of a set of given word types in a dataset
+  - get_accuracy: to calculate the accuracy of a set of given word types in a dataset
   - make_plot: makes a line plot with multiple lines
+  - make_folder: makes a new folder to store simulation results
 
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 01, 2020: multiple revisions, see below:
+      > migrate code to make new folder for simulation from plaut_model.ipynb
   - Nov 28, 2019: modify get_accuracy to have option to analyze vowels only
   - Nov 27, 2019: multiple changes, see below:
       > create file, copy get_accuracy from plaut_model.ipynb file
@@ -19,6 +22,9 @@ Revisions:
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
+import os
+import datetime
+from pathlib import Path
 
 # function to get the accuracy of a particular category
 def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
@@ -77,3 +83,20 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
 
     plt.show() # show plot in Jupyter Notebook cell output
     return None
+
+def make_folder():
+    # create a new folder for every run
+    path = Path(os.getcwd()).parent #get parent (Plaut_Model) directory filepath
+    now = datetime.datetime.now()
+    date = now.strftime("%b").lower()+now.strftime("%d")
+    i = 1
+
+    while True:
+        try:
+            rootdir = str(path)+"/results/"+date+"_test"+'{:02d}'.format(i)
+            os.mkdir(rootdir)
+            break
+        except:
+            i += 1
+
+    return rootdir

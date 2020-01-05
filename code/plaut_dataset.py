@@ -6,6 +6,7 @@ Description: Class for custom dataset for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 02, 2019: convert datatype to float here, instead of during training
   - Nov 28, 2019: modify plaut_dataset to add option to "zero" frequencies -> i.e. set to log(2)
   - Nov 27, 2019: create file, copy original class from plaut_model.ipynb file
       > copy get_graphemes/phonemes functions from plaut_model.ipynb
@@ -62,9 +63,9 @@ class plaut_dataset(Dataset):
         return {"type": self.df.loc[index, "type"], # type of word
                 "orth": self.df.loc[index, "orth"], # orthography (e.g. ace)
                 "phon": self.df.loc[index, "phon"], # phonography (e.g. /As/)
-                "frequency": torch.tensor(self.df.loc[index, "log_freq"]), # the frequency AFTER log transform
-                "graphemes": torch.tensor(self.df.loc[index, 'graphemes']), # vector of graphemes representing orthography
-                "phonemes": torch.tensor(self.df.loc[index, 'phonemes'])} # vector of phonemes representing phonology
+                "frequency": torch.tensor(self.df.loc[index, "log_freq"], dtype=torch.float), # the frequency AFTER log transform
+                "graphemes": torch.tensor(self.df.loc[index, 'graphemes'], dtype=torch.float), # vector of graphemes representing orthography
+                "phonemes": torch.tensor(self.df.loc[index, 'phonemes'], dtype=torch.float) }# vector of phonemes representing phonology
 
 
 def get_graphemes(word):

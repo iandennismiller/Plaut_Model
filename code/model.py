@@ -8,7 +8,8 @@ Date Created: January 02, 2020
 Revisions:
   - Jan 02, 2020: Multiple revisions, see below
       > Migrate the plaut_net class from plaut_model.ipynb
-      > Add weight initialization (credits to Ian Miller for choosing optimal initalization values)
+      > Include code weight initialization (credits to Ian Miller for choosing optimal initalization values)
+        NOTE: code is just copied for now, but not yet used
 
 '''
 import torch

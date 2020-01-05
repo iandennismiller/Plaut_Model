@@ -9,8 +9,10 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 05, 2020: remove .float when loading data from dataloader, since this is now done when creating the dataset
+  - Jan 04, 2020: modify make_folder to create subdirectories for plots
   - Jan 01, 2020: multiple revisions, see below:
-      > migrate code to make new folder for simulation from plaut_model.ipynb
+      > migrate code to make new folder (make_folder) for simulation from plaut_model.ipynb
   - Nov 28, 2019: modify get_accuracy to have option to analyze vowels only
   - Nov 27, 2019: multiple changes, see below:
       > create file, copy get_accuracy from plaut_model.ipynb file
@@ -31,13 +33,16 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
     correct = [0.0 for i in cat]
     total = [0.0 for i in cat]
     accuracy = [0.0 for i in cat]
+    
     for i, data in enumerate(data_loader):  # get batch from dataloader
+        
         # extract inputs, labels, type from batch
-        inputs = data["graphemes"].float()
-        labels = data["phonemes"].float()
+        inputs = data["graphemes"]
+        labels = data["phonemes"]
         types = pd.DataFrame(data["type"])
         
-        outputs = model(inputs).round()  # find prediction using model, then round to 0 or 1
+        # find prediction using model, then round to 0 or 1
+        outputs = model(inputs).round()  
        
         # The following section compares the outputs with the labels, torch.eq performs an element-wise
         # comparison between the two input vectors, and .sum sums up the amount of indentical (i.e. correct)
@@ -65,7 +70,8 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
     return accuracy
 
 def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filepath=None):
-    plt.figure()  # initialize figure
+    # initialize figure
+    plt.figure()  
 
     # for multiple lines on same graph, plot one at a time
     for data, label in zip(y_data, labels):
@@ -90,11 +96,13 @@ def make_folder():
     now = datetime.datetime.now()
     date = now.strftime("%b").lower()+now.strftime("%d")
     i = 1
-
+    
     while True:
         try:
             rootdir = str(path)+"/results/"+date+"_test"+'{:02d}'.format(i)
             os.mkdir(rootdir)
+            for i in ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]:
+                os.mkdir(rootdir+"/"+i)
             break
         except:
             i += 1

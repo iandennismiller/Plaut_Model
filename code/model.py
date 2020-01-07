@@ -20,6 +20,7 @@ class plaut_net(nn.Module):
         super(plaut_net, self).__init__()
         self.layer1 = nn.Linear(105, 100)
         self.layer2 = nn.Linear(100, 61)
+        self.init_weights()
         
     def init_weights(self):
         initrange = 0.1

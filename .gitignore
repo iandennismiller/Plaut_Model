@@ -1,3 +1,4 @@
-results/**
-code/.ipynb_checkpoints/**
-code/__pycache__/**
+/results/**
+!/*/README.txt
+/code/.ipynb_checkpoints/**
+/code/__pycache__/**

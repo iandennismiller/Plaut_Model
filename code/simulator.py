@@ -10,6 +10,8 @@ Revisions:
       > modify training code to save figures every 50 epochs
       > modify training code and config file to allow adjustable print and save plot frequencies
       > add option to delete results if exception encountered
+      > modify training code to add option of showing plots
+      > add saving of bar plots of final accuracy
   - Jan 04, 2020:
       > modify config file to better configure optimizer settings
       > modify config file to also store filepaths to dataset files
@@ -26,8 +28,7 @@ Revisions:
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 import time
 import shutil
 
@@ -39,11 +40,15 @@ from helpers import *
 
 class simulator():
     def __init__(self):
+        # set manual seed
+        torch.manual_seed(1)
+        
         # Load configuration file
         self.config = configparser.ConfigParser()
         self.config.read("config.cfg")
-        
-        self.load_data() # load dataset
+
+        # load dataset
+        self.load_data()
         
         # Define word types to calculate accuracy for
         self.types = ["HEC", "HRI", "HFE", "LEC", "LFRI", "LFEEXPT"] # calculate accuracy of these types
@@ -71,6 +76,7 @@ class simulator():
         self.probe_loader = DataLoader(self.probe_ds, batch_size=len(self.probe_ds), num_workers=0)
         self.plaut_anc_loader = DataLoader(self.plaut_anc_ds, batch_size=len(self.plaut_anc_ds), num_workers=0)
     
+    
     def train(self):
         try: # run training function
             self.train_function()
@@ -80,18 +86,20 @@ class simulator():
         except: # raise any other error
             raise
         else: # no exception
+            print("Training Completed!")
+            save_notes(self.rootdir)
             return None
         if input("An exception occured. Delete plots and checkpoints? [y/n] \n  > ").lower() in ['y', 'yes']:
             if input("Are you sure? [y/n] \n  > ").lower() in ['y', 'yes']:
                 shutil.rmtree(self.rootdir)
                 print("Simulation results deleted.")
                 return None
+        save_notes(self.rootdir)
         print("Simulation results saved.")
         return None
     
     def train_function(self):
         # Initialize model
-        torch.manual_seed(1)
         self.model = plaut_net()
         
         # Create folder to store results
@@ -139,12 +147,14 @@ class simulator():
             # switch optimizer after specified # of epochs
             if len(starts) > 0 and epoch == int(starts[0]):
                 if optims[0] == 'Adam':
-                    optimizer = optim.Adam(self.model.parameters(), lr=float(lrates[0]), weight_decay=float(wds[0]))
+                    optimizer = optim.Adam(self.model.parameters(), lr=float(lrates[0]))#, weight_decay=float(wds[0]))
                 elif optims[0] == 'SGD':
                     optimizer = optim.SGD(self.model.parameters(), lr=float(lrates[0]), momentum=float(momenta[0]), weight_decay=float(wds[0]))
                 else:
                     print("ERROR: Use either Adam or SGD optimizer")
                     return None
+                
+                optimizer.zero_grad() # zero the gradients
                 
                 for i in [starts, optims, lrates, momenta, wds]:
                     i.pop(0) # optimizer changed, pop first item off of arrays
@@ -194,13 +204,19 @@ class simulator():
 
             # save loss and accuracy plots every X epochs
             if epoch % save_freq == save_freq - 1:
-                make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss/epoch_"+str(epoch+1)+".jpg")
-                make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy/epoch_"+str(epoch+1)+".jpg")
-                make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy/epoch_"+str(epoch+1)+".jpg")
-                make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy/epoch_"+str(epoch+1)+".jpg")
+                make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
 
-        # plot final loss curve and save
-        make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss Final.jpg")
-        make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Final.jpg")
-        make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Final.jpg")
-        make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Final.jpg")   
+        # plot final loss and accuracy line plots and save
+        make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss Final.jpg", show=True)
+        make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Final.jpg", show=True)
+        make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Final.jpg", show=True)
+        make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Final.jpg", show=True)
+        
+        # plot final accuracy bar plots and save
+        make_bar(self.types, [i[-1] for i in acc], "Category", "Accuracy", "Final Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Bar.jpg", show=True)
+        make_bar(self.anc_types, [i[-1] for i in anc_acc], "Category", "Accuracy", "Final Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Bar.jpg", show=True)
+        make_bar(self.probe_types, [i[-1] for i in probe_acc], "Category", "Accuracy", "Final Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Bar.jpg", show=True)
+        

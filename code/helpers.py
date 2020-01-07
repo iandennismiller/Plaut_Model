@@ -5,11 +5,16 @@ Description: Helper Functions for Plaut Model
   - get_accuracy: to calculate the accuracy of a set of given word types in a dataset
   - make_plot: makes a line plot with multiple lines
   - make_folder: makes a new folder to store simulation results
+  - save_notes: function to save notes regarding simulation results at end of simulation
 
 Date Created: November 27, 2019
 
 Revisions:
-  - Jan 05, 2020: remove .float when loading data from dataloader, since this is now done when creating the dataset
+  - Jan 05, 2020: multiple revisions, see below:
+      > remove .float when loading data from dataloader, since this is now done when creating the dataset
+      > add save_notes function to add a notes.txt file after running simulation to save any notes
+      > add make_bar function to create bar graphs for accuracy at end of simulation
+      > add show_plot parameter in make_plot and make_bar to control whether to print plots
   - Jan 04, 2020: modify make_folder to create subdirectories for plots
   - Jan 01, 2020: multiple revisions, see below:
       > migrate code to make new folder (make_folder) for simulation from plaut_model.ipynb
@@ -69,7 +74,7 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
     
     return accuracy
 
-def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filepath=None):
+def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filepath=None, show=True):
     # initialize figure
     plt.figure()  
 
@@ -87,7 +92,32 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
     if save == True:
         plt.savefig(filepath, dpi=200)
 
-    plt.show() # show plot in Jupyter Notebook cell output
+    # show plot in Jupyter Notebook cell output
+    if show == True:
+        plt.show() 
+    
+    return None
+
+def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None, show=True):
+    # initialize figure
+    plt.figure()  
+
+    # plot bar graph
+    plt.bar(x_data, y_data)
+    
+    #axis labels, title, legend
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    
+    # save plot at filepath if needed
+    if save == True:
+        plt.savefig(filepath, dpi=200)
+    
+    # show plot in Jupyter Notebook cell output
+    if show == True:
+        plt.show() 
+    
     return None
 
 def make_folder():
@@ -108,3 +138,15 @@ def make_folder():
             i += 1
 
     return rootdir
+
+def save_notes(rootdir):
+    with open(rootdir+"/notes.txt", 'w') as writer: # make notes file inside results folder
+        writer.write("NOTES: \n")
+        print("Add any notes below to save with results:")
+        
+        # write each note on new line, until nothing is entered
+        notes = input(" > ") 
+        while notes != "":
+            writer.write(" > "+notes+"\n")
+            notes = input(" > ")
+    return None

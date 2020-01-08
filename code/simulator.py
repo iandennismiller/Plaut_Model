@@ -6,6 +6,9 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Jan 08, 2020:
+      > typo: in self.types = [...] fixed (LFEEXPT -> LFE)
+      > dataset filepaths have been replaced with config file inputs
   - Jan 05, 2020:
       > modify training code to save figures every 50 epochs
       > modify training code and config file to allow adjustable print and save plot frequencies
@@ -51,7 +54,7 @@ class simulator():
         self.load_data()
         
         # Define word types to calculate accuracy for
-        self.types = ["HEC", "HRI", "HFE", "LEC", "LFRI", "LFEEXPT"] # calculate accuracy of these types
+        self.types = ["HEC", "HRI", "HFE", "LEC", "LFRI", "LFE"] # calculate accuracy of these types
         self.anc_types = ["ANC_REG", "ANC_EXC", "ANC_AMB"]
         self.probe_types = ["PRO_REG", "PRO_EXC", "PRO_AMB"]
             
@@ -63,10 +66,11 @@ class simulator():
         > multiple csv files can be concatenated in format: ["filename1", True/False, "filename2", True/False, ...]
         > True/False indicates whether to override frequencies to log(2)
         '''
-        self.plaut_ds = plaut_dataset(["../dataset/plaut_dataset.csv", False])
-        self.anc_ds = plaut_dataset(["../dataset/anchors.csv", False])
-        self.probe_ds = plaut_dataset(["../dataset/probes.csv", False])
-        self.plaut_anc_ds = plaut_dataset(['../dataset/plaut_dataset.csv', True, '../dataset/anchors.csv', False])
+        self.plaut_ds = plaut_dataset([self.config['dataset']['plaut'], False])
+        self.anc_ds = plaut_dataset([self.config['dataset']['anchor'], False])
+        self.probe_ds = plaut_dataset([self.config['dataset']['probe'], False])
+        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], True, self.config['dataset']['anchor'], False])
+        # Note: adding "True" after a filepath changes frequencies to ln(2), "False" leaves frequencies as is
         
         '''
         INITIALIZE DATALOADERS
@@ -147,7 +151,7 @@ class simulator():
             # switch optimizer after specified # of epochs
             if len(starts) > 0 and epoch == int(starts[0]):
                 if optims[0] == 'Adam':
-                    optimizer = optim.Adam(self.model.parameters(), lr=float(lrates[0]))#, weight_decay=float(wds[0]))
+                    optimizer = optim.Adam(self.model.parameters(), lr=float(lrates[0]), weight_decay=float(wds[0]))
                 elif optims[0] == 'SGD':
                     optimizer = optim.SGD(self.model.parameters(), lr=float(lrates[0]), momentum=float(momenta[0]), weight_decay=float(wds[0]))
                 else:
@@ -173,7 +177,8 @@ class simulator():
                 #forward pass + backward pass + optimize
                 outputs = self.model(inputs)
                 loss = criterion(outputs, labels)
-                loss = (loss*freq).mean() # scale loss by frequency, then find mean
+                loss = loss*freq
+                loss = loss.mean() # scale loss by frequency, then find mean
                 avg_loss += loss.item()
                 loss.backward()
                 optimizer.step()

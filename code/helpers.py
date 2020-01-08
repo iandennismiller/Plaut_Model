@@ -10,6 +10,9 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 08, 2020:
+      > set bounds on y-axis to be [0, 1] for accuracy plots
+      > reduce saved plot dpi from 200 to 150
   - Jan 05, 2020: multiple revisions, see below:
       > remove .float when loading data from dataloader, since this is now done when creating the dataset
       > add save_notes function to add a notes.txt file after running simulation to save any notes
@@ -68,9 +71,10 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
                 temp_compare = pd.DataFrame(compare) # create dataframe using compare to faciliate next line (vector comparison)
                 correct[j] += ((curr_type == True) & (temp_compare == compare_len)).sum()[0] # correct if desired type AND all desired elements match label
                 total[j] += (curr_type == True).sum()[0] # count all of the desired type
-                
+    
+    # calculate accuracy: divide correct samples by total samples
     for i in range(len(accuracy)):
-        accuracy[i] = correct[i]/total[i] # calculate accuracy: divide correct samples by total samples
+        accuracy[i] = correct[i]/total[i] 
     
     return accuracy
 
@@ -82,6 +86,10 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
     for data, label in zip(y_data, labels):
         plt.plot(x_data, data, label=label)
     
+    # set ylim for accuracy plots only
+    if "Accuracy" in title:
+        plt.ylim(0, 1)
+    
     #axis labels, title, legend
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -90,12 +98,12 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
     
     # save plot at filepath if needed
     if save == True:
-        plt.savefig(filepath, dpi=200)
-
+        plt.savefig(filepath, dpi=150)
+    
     # show plot in Jupyter Notebook cell output
     if show == True:
-        plt.show() 
-    
+        plt.show()
+
     return None
 
 def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None, show=True):
@@ -105,18 +113,22 @@ def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None,
     # plot bar graph
     plt.bar(x_data, y_data)
     
+    # set ylim for accuracy plots only
+    if "Accuracy" in title:
+        plt.ylim(0, 1)
+    
     #axis labels, title, legend
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)
-    
+            
     # save plot at filepath if needed
     if save == True:
-        plt.savefig(filepath, dpi=200)
-    
+        plt.savefig(filepath, dpi=150)
+        
     # show plot in Jupyter Notebook cell output
     if show == True:
-        plt.show() 
+        plt.show()
     
     return None
 

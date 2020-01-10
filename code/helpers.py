@@ -11,7 +11,7 @@ Date Created: November 27, 2019
 
 Revisions:
   - Jan 08, 2020:
-      > set bounds on y-axis to be [0, 1] for accuracy plots
+      > set bounds on y-axis to be [-0.05, 1.05] for accuracy plots
       > reduce saved plot dpi from 200 to 150
   - Jan 05, 2020: multiple revisions, see below:
       > remove .float when loading data from dataloader, since this is now done when creating the dataset
@@ -88,7 +88,7 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
     
     # set ylim for accuracy plots only
     if "Accuracy" in title:
-        plt.ylim(0, 1)
+        plt.ylim(-0.05, 1.05)
     
     #axis labels, title, legend
     plt.xlabel(x_label)
@@ -115,7 +115,7 @@ def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None,
     
     # set ylim for accuracy plots only
     if "Accuracy" in title:
-        plt.ylim(0, 1)
+        plt.ylim(-0.05, 1.05)
     
     #axis labels, title, legend
     plt.xlabel(x_label)

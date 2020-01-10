@@ -7,8 +7,13 @@ Date Created: January 02, 2020
 
 Revisions:
   - Jan 08, 2020:
-      > typo: in self.types = [...] fixed (LFEEXPT -> LFE)
+      > typo: under __init__, self.types = [...] fixed (LFEEXPT -> LFE) as LFEEXPT type does not exist after collapsing
       > dataset filepaths have been replaced with config file inputs
+      > modify calculation of loss to do a proper weighted mean:
+            BEFORE:                   AFTER:
+            loss = loss*freq          loss = loss*freq 
+            loss = loss.mean()        loss = loss.sum()/(freq.sum()*loss.shape[1])
+            loss.backward()           loss.backward()
   - Jan 05, 2020:
       > modify training code to save figures every 50 epochs
       > modify training code and config file to allow adjustable print and save plot frequencies
@@ -177,8 +182,14 @@ class simulator():
                 #forward pass + backward pass + optimize
                 outputs = self.model(inputs)
                 loss = criterion(outputs, labels)
+                
                 loss = loss*freq
-                loss = loss.mean() # scale loss by frequency, then find mean
+                loss = loss.sum()/(freq.sum()*loss.shape[1]) # find *weighted* mean of loss
+                #loss = loss.sum()/freq.sum()*64
+                
+                #loss = loss*freq
+                #loss = loss.mean() # scale loss by frequency, then find mean
+                
                 avg_loss += loss.item()
                 loss.backward()
                 optimizer.step()

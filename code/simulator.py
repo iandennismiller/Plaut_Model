@@ -6,6 +6,8 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Jan 12, 2020:
+      > add parameter in make_plot functions to plot red line when anchors are added
   - Jan 08, 2020:
       > typo: under __init__, self.types = [...] fixed (LFEEXPT -> LFE) as LFEEXPT type does not exist after collapsing
       > dataset filepaths have been replaced with config file inputs
@@ -220,16 +222,16 @@ class simulator():
 
             # save loss and accuracy plots every X epochs
             if epoch % save_freq == save_freq - 1:
-                make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss/epoch_"+str(epoch+1)+".jpg", show=True)
-                make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
-                make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
-                make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Loss/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Anchor Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
+                make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Probe Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
 
         # plot final loss and accuracy line plots and save
-        make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", save=True, filepath=self.rootdir+"/Training Loss Final.jpg", show=True)
-        make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Final.jpg", show=True)
-        make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Final.jpg", show=True)
-        make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Final.jpg", show=True)
+        make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Loss Final.jpg", show=True)
+        make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Accuracy Final.jpg", show=True)
+        make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Anchor Accuracy Final.jpg", show=True)
+        make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Probe Accuracy Final.jpg", show=True)
         
         # plot final accuracy bar plots and save
         make_bar(self.types, [i[-1] for i in acc], "Category", "Accuracy", "Final Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Bar.jpg", show=True)

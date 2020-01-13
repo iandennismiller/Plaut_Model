@@ -10,6 +10,9 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 12, 2020:
+      > add gridlines on plot
+      > add line to indicate when anchors are added
   - Jan 08, 2020:
       > set bounds on y-axis to be [-0.05, 1.05] for accuracy plots
       > reduce saved plot dpi from 200 to 150
@@ -78,7 +81,7 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
     
     return accuracy
 
-def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filepath=None, show=True):
+def make_plot(x_data, y_data, labels, x_label, y_label, title, anchor=500, save=False, filepath=None, show=True):
     # initialize figure
     plt.figure()  
 
@@ -86,13 +89,20 @@ def make_plot(x_data, y_data, labels, x_label, y_label, title, save=False, filep
     for data, label in zip(y_data, labels):
         plt.plot(x_data, data, label=label)
     
-    # set ylim for accuracy plots only
+    if max(x_data) >= anchor:
+        plt.plot([anchor, anchor], [-1, 2], lw=0.5, color='red', label="Add Anchors")
+    
+    # set xlim and yclim
+    plt.xlim(0-max(x_data)*0.05, max(x_data)*1.05)
     if "Accuracy" in title:
         plt.ylim(-0.05, 1.05)
-    
-    #axis labels, title, legend
+    else:
+        plt.ylim(0-max(y_data[0])*0.05, max(y_data[0])*1.05)
+
+    #axis labels, title, legend, gridlines
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    plt.grid(b=True, which='both', axis='both')
     plt.title(title)
     plt.legend(loc='best')
     

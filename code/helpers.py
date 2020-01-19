@@ -10,6 +10,9 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Jan 17, 2020:
+      > modify accuracy calculation to simply be based on highest activity
+      > modify get_accuracy function to also return dictionary of items needed to save csv
   - Jan 12, 2020:
       > add gridlines on plot
       > add line to indicate when anchors are added
@@ -53,33 +56,48 @@ def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
         types = pd.DataFrame(data["type"])
         
         # find prediction using model, then round to 0 or 1
-        outputs = model(inputs).round()  
+        outputs = model(inputs)  
        
         # The following section compares the outputs with the labels, torch.eq performs an element-wise
         # comparison between the two input vectors, and .sum sums up the amount of indentical (i.e. correct)
         # elements in each word -> compare is dim [# of samples]
+        
         if vowels_only == True:
-            compare = torch.eq(outputs[:, 23:37], labels[:, 23:37]).sum(dim=1) # compare vowel section only with labels
-            compare_len = 14 # length to compare is only # of vowels
+            compare = torch.eq(outputs[:, 23:37].argmax(dim=1), labels[:, 23:37].argmax(dim=1))
+            #compare = torch.eq(outputs[:, 23:37], labels[:, 23:37]).sum(dim=1) # compare vowel section only with labels
+            #compare_len = 14 # length to compare is only # of vowels
         else:
+            raise Exception("Code needs to be updated for NOT vowels only case")
             compare = torch.eq(outputs, labels).sum(dim=1)  # compare with labels
             compare_len = 61 # length to compare is entire phonology vector
-
+        
         for j in range(len(cat)): # for each desired type
             if cat[j] == 'All':
-                correct[j] += torch.eq(compare, compare_len).sum().item() # count as correct if all desired elements match label
-                total[j] += len(compare) # accumulate number of samples
+                correct[j] = compare.sum()[0]
+                #correct[j] += torch.eq(compare, compare_len).sum().item() # count as correct if all desired elements match label
+                #total[j] += len(compare) # accumulate number of samples
             else:
                 curr_type = types.apply(lambda x: x == cat[j])  # check for desired type
-                temp_compare = pd.DataFrame(compare) # create dataframe using compare to faciliate next line (vector comparison)
-                correct[j] += ((curr_type == True) & (temp_compare == compare_len)).sum()[0] # correct if desired type AND all desired elements match label
+                #temp_compare = pd.DataFrame(compare) # create dataframe using compare to faciliate next line (vector comparison)
+                temp_compare = pd.DataFrame(compare)
+                correct[j] += ((curr_type == True) & (temp_compare == True)).sum()[0] # correct if desired type AND all desired elements match label
                 total[j] += (curr_type == True).sum()[0] # count all of the desired type
+                
     
     # calculate accuracy: divide correct samples by total samples
     for i in range(len(accuracy)):
         accuracy[i] = correct[i]/total[i] 
+        
+    temp_data = {
+        'correct': [int(i) for i in compare.tolist()],
+        'orth': data['orth'],
+        'phon': data['phon'],
+        'category': data['type'],
+        'example_id': [i+1 for i in range(len(compare))],
+        'error': [0 for i in range(len(compare))]
+    }
     
-    return accuracy
+    return accuracy, temp_data
 
 def make_plot(x_data, y_data, labels, x_label, y_label, title, anchor=500, save=False, filepath=None, show=True):
     # initialize figure

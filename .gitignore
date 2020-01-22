@@ -2,3 +2,4 @@
 !/*/README.txt
 /code/.ipynb_checkpoints/**
 /code/__pycache__/**
+!/results/*.gz

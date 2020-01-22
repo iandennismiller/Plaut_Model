@@ -6,6 +6,9 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Jan 21, 2020:
+      > add anchor dilution and anchor order, as well as random seed to csv file
+      > modify filename naming convention
   - Jan 19, 2020:
       > add gzip compression to csv file
   - Jan 18, 2020:
@@ -125,7 +128,7 @@ class simulator():
     def train_function(self):
         '''
         ================================================
-        INITIAL SETUP
+        1/ INITIAL SETUP
         ================================================
         '''
         
@@ -157,11 +160,21 @@ class simulator():
             except:
                 break
         
-        # save anchor set to add to results_data after training complete
+        # calculate total # of samples in dataset
         total_samples = len(self.plaut_ds)+len(self.anc_ds)+len(self.probe_ds)
+        
+        # determine initial configurations
+        # dilution: 1 means N, 2 means N/2, 3 means N/3
+        # anchor order: 1 means 1->2->3, 3 means 3->2->1
+        random_seed = self.config['setup']['random_seed']
+        dilution = self.config['dataset']['anchor'].split('.')[-2][-1]
+        anchor_order = 1 if self.config['dataset']['anchor'].split('.')[-2].split('_')[-1][0:-1] == 'new' else 3 
+        
+        # save initial configurations
         initial_configs = {
-            'anchor_set': ["N/"+self.config['dataset']['anchor'].split('.')[-2][-1] for j in range(total_samples*total_epochs)]
-            'random_seed': [self.config['setup']['random_seed'] for j in range(total_samples*total_epochs)]
+            'dilution': [dilution for j in range(total_samples*total_epochs)],
+            'anchor_order': [anchor_order for j in range(total_samples)],
+            'random_seed': [random_seed for j in range(total_samples*total_epochs)]     
         }
         
         # save optimizer settings to add to results_data after training complete
@@ -215,7 +228,7 @@ class simulator():
         
         '''
         ================================================
-        TRAINING LOOP
+        2/ TRAINING LOOP
         ================================================
         '''
         # train for specified # of epochs
@@ -247,7 +260,7 @@ class simulator():
             
             '''
             --------------------------------------------
-            FWD + BWD PASSES
+            2.1/ FWD + BWD PASSES
             --------------------------------------------
             '''
             # iterate through data loader
@@ -271,7 +284,7 @@ class simulator():
             
             '''
             --------------------------------------------
-            STATISTICS CALCULATION AND SAVING
+            2.2/ STATISTICS CALCULATION AND SAVING
             --------------------------------------------
             '''
             # save loss and calculate accuracy every X epochs
@@ -294,7 +307,7 @@ class simulator():
                         
             '''
             --------------------------------------------
-            PLOTTING
+            2.3/ PLOTTING
             --------------------------------------------
             '''
             # save loss and accuracy plots every X epochs
@@ -306,14 +319,9 @@ class simulator():
                     ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]):
                     
                     make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+"/epoch_"+str(epoch+1)+".jpg", show=True)
-                    
-                #make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Loss/epoch_"+str(epoch+1)+".jpg", show=True)
-                #make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
-                #make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Anchor Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
-                #make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Probe Accuracy/epoch_"+str(epoch+1)+".jpg", show=True)
             '''
             --------------------------------------------
-            PRINTING OF STATISTICS
+            2.4/ PRINTING OF STATISTICS
             --------------------------------------------
             '''
             
@@ -327,7 +335,7 @@ class simulator():
                 
         '''
         ================================================
-        AFTER TRAINING IS COMPLETED
+        3/ AFTER TRAINING IS COMPLETED
         ================================================
         '''
         # plot final loss and accuracy line plots and save
@@ -338,11 +346,6 @@ class simulator():
             ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]):
                     
             make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+" Final.jpg", show=True)
-                    
-        #make_plot(epochs, [losses], ["Train Loss"], "Epoch", "Loss", "Training Loss", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Loss Final.jpg", show=True)
-        #make_plot(epochs, acc, self.types, "Epoch", "Accuracy", "Training Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Training Accuracy Final.jpg", show=True)
-        #make_plot(epochs, anc_acc, self.anc_types, "Epoch", "Accuracy", "Anchor Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Anchor Accuracy Final.jpg", show=True)
-        #make_plot(epochs, probe_acc, self.probe_types, "Epoch", "Accuracy", "Probe Accuracy", anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/Probe Accuracy Final.jpg", show=True)
         
         # plot final accuracy bar plots and save
         make_bar(self.types, [i[-1] for i in acc], "Category", "Accuracy", "Final Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Bar.jpg", show=True)
@@ -353,7 +356,9 @@ class simulator():
         print("Average Time: ", sum(times)/len(times))
         
         # create csv file for results
-        filename = self.rootdir.split("/")[-1] # extract file name from folder filepath
+        date = self.rootdir.split('/')[-1].split('_')[0]
+        filename = 'warping-dilation-seed-'+str(random_seed)+'-dilution-'+str(dilution)+'-order-'+str(anchor_order)+'-date-'+date+'.csv.gz' # extract file name from folder filepath
         results_data.update(initial_configs) # include optimizer settings  
         results_df = pd.DataFrame({key:pd.Series(value) for key, value in results_data.items()}) # create dataframe
-        results_df.to_csv(self.rootdir+"/"+filename+".gz", index=False, compression='gzip') # save as csv
+        results_df.to_csv(self.rootdir+"/"+filename+".gz", index=False, compression='gzip') # save as csv in simulation folder
+        results_df.to_csv(self.rootdir[0:-13]+"/"+filename, index=False, compression='gzip') # save as csv in results folder

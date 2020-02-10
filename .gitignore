@@ -1,5 +1,8 @@
-/results/**
-!/*/README.txt
 /code/.ipynb_checkpoints/**
 /code/__pycache__/**
-!/results/*.gz
+/results/Archive
+/results/**/Anchor Accuracy
+/results/**/Probe Accuracy
+/results/**/Training Accuracy
+/results/**/Training Loss
+

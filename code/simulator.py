@@ -6,6 +6,10 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Feb 4, 2020:
+      > add code to save checkpoints, and load from checkpoints
+      > modify saving results_df to both results folder and simulation folder to
+        just saving one, then copying for the second (to save time)
   - Jan 21, 2020:
       > add anchor dilution and anchor order, as well as random seed to csv file
       > modify filename naming convention
@@ -99,7 +103,17 @@ class simulator():
         self.probe_loader = DataLoader(self.probe_ds, batch_size=len(self.probe_ds), num_workers=0)
         self.plaut_anc_loader = DataLoader(self.plaut_anc_ds, batch_size=len(self.plaut_anc_ds), num_workers=0)
     
-    
+    def save_checkpoint(self, optimizer, epochs, losses, acc, pro_acc, anc_acc):
+        torch.save({
+            'epochs': epochs,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'losses': losses,
+            'acc': acc,
+            'pro_acc': pro_acc,
+            'anc_acc': anc_acc
+        }, self.rootdir+'/checkpoint_'+str(epochs[-1])+'.tar')
+
     def train(self):
         try: # run training function
             self.train_function()
@@ -132,23 +146,35 @@ class simulator():
         ================================================
         '''
         
-        # Initialize model
-        self.model = plaut_net()
-        
+        '''
+        --------------------------------------------
+        1.1/ RESULTS FOLDER SETUP
+        --------------------------------------------
+        '''
         # Create folder to store results
         self.rootdir = make_folder()
         print("Test Results will be stored in: ", self.rootdir)     
-        
+
         # Make a copy of config file in results folder
         shutil.copyfile("config.cfg", self.rootdir+"/config.cfg")
 
+        '''
+        --------------------------------------------
+        1.2/ LOAD CONFIG SETUP
+        --------------------------------------------
+        '''
         # Load general settings from configuration file
         total_epochs = int(self.config['setup']['total_epochs'])
         anchor_epoch = int(self.config['setup']['anchor_epoch'])
         print_freq = int(self.config['setup']['print_freq'])
         plot_freq = int(self.config['setup']['plot_freq'])
         save_freq = int(self.config['setup']['save_freq'])
-        
+        cp_epochs = [int(x) for x in self.config['setup']['checkpoint_epochs'].split(',')]
+        prev_checkpoint = self.config['setup']['prev_checkpoint']
+
+        if prev_checkpoint != 'None':
+            prev_checkpoint = torch.load(prev_checkpoint)
+
         # Load optimizer settings from configuration file
         starts, optims, lrates, momenta, wds = [], [], [], [], []
         i = 1
@@ -159,17 +185,22 @@ class simulator():
                 i = i + 1
             except:
                 break
-        
-        # calculate total # of samples in dataset
-        total_samples = len(self.plaut_ds)+len(self.anc_ds)+len(self.probe_ds)
-        
+
         # determine initial configurations
         # dilution: 1 means N, 2 means N/2, 3 means N/3
         # anchor order: 1 means 1->2->3, 3 means 3->2->1
         random_seed = self.config['setup']['random_seed']
         dilution = self.config['dataset']['anchor'].split('.')[-2][-1]
         anchor_order = 1 if self.config['dataset']['anchor'].split('.')[-2].split('_')[-1][0:-1] == 'new' else 3 
-        
+
+        '''
+        --------------------------------------------
+        1.3/ SAVE INITIAL CONFIG
+        --------------------------------------------
+        '''
+        # calculate total # of samples in dataset
+        total_samples = len(self.plaut_ds)+len(self.anc_ds)+len(self.probe_ds)
+
         # save initial configurations
         initial_configs = {
             'dilution': [dilution for j in range(total_samples*total_epochs)],
@@ -195,14 +226,13 @@ class simulator():
         initial_configs['anchors_added'] = [0 for i in range(anchor_epoch*total_samples)] + [1 for i in range((total_epochs-anchor_epoch)*total_samples)]
         
         '''
-        initial_configs = {
-            'optim': list(optims),
-            'lr': list(lrates),
-            'momentum': list(momenta),
-            'weight decay': list(wds),
-            'anchor set': ["N/"+self.config['dataset']['anchor'].split('.')[-2][-1]]}
+        --------------------------------------------
+        1.4/ MODEL INITIALIZATION
+        --------------------------------------------
         '''
-        
+        # Initialize model
+        self.model = plaut_net()
+
         # define loss function
         criterion = nn.BCELoss(reduction='none') #reduction=none allows scaling by frequency afterwards
         
@@ -225,14 +255,44 @@ class simulator():
             'correct': [],
             'error': []
         }
-        
+        # starting epoch
+        start_epoch = 0
+        # try to load prev checkpoint if existant
+        if prev_checkpoint != 'None':
+            self.model.load_state_dict(prev_checkpoint['model_state_dict'])
+            epochs = prev_checkpoint['epochs']
+            losses = prev_checkpoint['losses']
+            acc = prev_checkpoint['acc']
+            anc_acc = prev_checkpoint['anc_acc']
+            probe_acc = prev_checkpoint['pro_acc']
+            start_epoch = epochs[-1]
+            while len(starts) > 0:
+                if int(starts[0]) <= start_epoch:
+                    optimizer = optims[0]
+                    lr = float(lrates[0])
+                    m = float(momenta[0])
+                    wd = float(wds[0])
+                    for i in [starts, optims, lrates, momenta, wds]:
+                        i.pop(0)
+                else:
+                    break
+            if optimizer == 'Adam':
+                    optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
+            elif optimizer == 'SGD':
+                optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=m, weight_decay=wd)
+            else:
+                print("ERROR: Use either Adam or SGD optimizer")
+                return None
+            optimizer.zero_grad()
+        print("Starting Epoch: ", start_epoch)
+            
         '''
         ================================================
         2/ TRAINING LOOP
         ================================================
         '''
         # train for specified # of epochs
-        for epoch in range(total_epochs): 
+        for epoch in range(start_epoch, total_epochs): 
             # start timer
             epoch_time = time.time()
             
@@ -304,6 +364,10 @@ class simulator():
                     results_data['epoch'] = results_data['epoch'] + [epoch+1 for i in range(len(temp_data['example_id']))]
                     for i in ['example_id', 'orth', 'phon', 'category', 'correct', 'error']:
                         results_data[i] = results_data[i] + temp_data[i]
+            
+            # checkpoint if specified
+            if epoch+1 in cp_epochs:
+                self.save_checkpoint(optimizer, epochs, losses, acc, probe_acc, anc_acc)
                         
             '''
             --------------------------------------------
@@ -312,7 +376,7 @@ class simulator():
             '''
             # save loss and accuracy plots every X epochs
             if epoch % plot_freq == plot_freq - 1:              
-                for ydata, labels, ylabel, title in zip(\
+                for ydata, labels, ylabel, title in zip( \
                     [[losses], acc, anc_acc, probe_acc], \
                     [["Train Loss"], self.types, self.anc_types, self.probe_types], \
                     ["Loss", "Accuracy", "Accuracy", "Accuracy"], \
@@ -324,7 +388,6 @@ class simulator():
             2.4/ PRINTING OF STATISTICS
             --------------------------------------------
             '''
-            
             # calculate time elapsed over epoch
             time_elapsed = time.time() - epoch_time
             times.append(time_elapsed)
@@ -360,5 +423,5 @@ class simulator():
         filename = 'warping-dilation-seed-'+str(random_seed)+'-dilution-'+str(dilution)+'-order-'+str(anchor_order)+'-date-'+date+'.csv.gz' # extract file name from folder filepath
         results_data.update(initial_configs) # include optimizer settings  
         results_df = pd.DataFrame({key:pd.Series(value) for key, value in results_data.items()}) # create dataframe
-        results_df.to_csv(self.rootdir+"/"+filename+".gz", index=False, compression='gzip') # save as csv in simulation folder
-        results_df.to_csv(self.rootdir[0:-13]+"/"+filename, index=False, compression='gzip') # save as csv in results folder
+        results_df.to_csv(self.rootdir+"/"+filename, index=False, compression='gzip') # save as csv in simulation folder
+        shutil.copyfile(self.rootdir+"/"+filename, self.rootdir[0:-13]+"/"+filename) # save as csv in results folder

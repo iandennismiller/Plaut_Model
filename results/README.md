@@ -11,5 +11,5 @@
 ### Feb 05, 2020
  > * Description: Individual anchor simulations from anchors_new1.csv
  > * Simulation Folders: feb05_test01 to feb05_test27
- > * .gz files: inside `results/by_word`, named: `warping-dilation-<anchor>.csv.gz`
+ > * .gz files: inside `results/single_anchor`, named: `warping-dilation-<anchor>.csv.gz`
  >    * `<anchor>` is the orthography of the anchor

@@ -16,9 +16,16 @@
 > * Simulation Folders: /freq_tests/feb19_test07 to /freq_tests/feb19_test09
 > * .gz files: inside simulation folders, with format `warping-dilation-FREQTESTC-S<seed>D<dilation>O<order>FEB19.csv.gz`
 
+>#### Notes
+>    * `<seed> = {1}` indicates random number generator seed
+>    * `<dilation> = {1, 2, 3}` indicates N, N/2, N/3 dilation for Frequency Tests A and B
+>    * `<dilation> = {0, 5, 3}` indicates `ln(10+2)`, `ln(5+2)`, `ln(3.33+2)` respectively
+>    * `<order> = {1}` indicates starting anchor set
+>    * *Typo*: For Frequency Test C, order is shown as 3 in the title and inside the csv file. This is a typo; the anchor order is 1.
 
 
-Note: Simulations run after Feb 05, 2020 have the Adam optimizer reset after anchors are added.
+### Notes
+> * Simulations run after Feb 05, 2020 have the Adam optimizer reset after anchors are added.
 
 ### Feb 05, 2020
 > * Description: Individual anchor simulations from anchors_new1.csv

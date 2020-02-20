@@ -8,14 +8,26 @@ PLAUT DATASET
    > EXC, EXPT, LFE, LFEEXPT are combined as LFE
 
 NEW ANCHORS AND PROBES (based on Warping_dilutionMP.xlsx)
-3. anchors_new1.csv is Anchor1 only
-4. anchors_new2.csv is Anchor1 and Anchor2
-5. anchors_new3.csv is Anchor1, Anchor2, and Anchor3.
+frequency of the files below is given by ln(10/N + 2)
+1. anchors_new1.csv is Anchor1 only
+2. anchors_new2.csv is Anchor1 and Anchor2
+3. anchors_new3.csv is Anchor1, Anchor2, and Anchor3
+4. anchors_swap1.csv is Anchor3 only
+5. anchors_swap2.csv is Anchor3 and Anchor2
+6. anchors_swap3.csv is Anchor3, Anchor2, and Anchor1 (i.e. identical to anchors_new3.csv
+
+
+FREQUENCY TEST
+frequency of the files below is given by ln(10+2)/N
+1. anchors_new1.csv is Anchor1 only
+2. anchors_new2.csv is Anchor1 and Anchor2
+3. anchors_new3.csv is Anchor1, Anchor2, and Anchor3
+
 
 OLD ANCHORS AND PROBES
-6. anchors.csv is the old set of anchors
-7. probes.csv is the old set of probes
+1. anchors.csv is the old set of anchors
+2. probes.csv is the old set of probes
 
 OTHER
-8. PMSPdata.txt is the original Plaut dataset
-9. word_freq.csv is the KFFRQ frequencies.
+1. PMSPdata.txt is the original Plaut dataset
+2. word_freq.csv is the KFFRQ frequencies.

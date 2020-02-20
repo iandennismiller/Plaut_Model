@@ -6,6 +6,9 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Feb 19, 2020:
+      > add label column to initial_configs, which will be saved into the results csv
+      > modify config file to include label
   - Feb 4, 2020:
       > add code to save checkpoints, and load from checkpoints
       > modify saving results_df to both results folder and simulation folder to
@@ -153,6 +156,7 @@ class simulator():
         '''
         # Create folder to store results
         self.rootdir = make_folder()
+        date = self.rootdir.split('/')[-1].split('_')[0]
         print("Test Results will be stored in: ", self.rootdir)     
 
         # Make a copy of config file in results folder
@@ -171,8 +175,12 @@ class simulator():
         save_freq = int(self.config['setup']['save_freq'])
         cp_epochs = [int(x) for x in self.config['setup']['checkpoint_epochs'].split(',')]
         prev_checkpoint = self.config['setup']['prev_checkpoint']
+        label = self.config['setup']['label']
+        
+        if label == '':
+            label = input("Enter label for simulation:")
 
-        if prev_checkpoint != 'None':
+        if prev_checkpoint != '':
             prev_checkpoint = torch.load(prev_checkpoint)
 
         # Load optimizer settings from configuration file
@@ -200,12 +208,18 @@ class simulator():
         '''
         # calculate total # of samples in dataset
         total_samples = len(self.plaut_ds)+len(self.anc_ds)+len(self.probe_ds)
-
+        
+        # create label for simulation
+        label = label+"-S{}D{}O{}".format(random_seed, dilution, anchor_order)+date.upper()
+        
         # save initial configurations
         initial_configs = {
             'dilution': [dilution for j in range(total_samples*total_epochs)],
-            'anchor_order': [anchor_order for j in range(total_samples)],
-            'random_seed': [random_seed for j in range(total_samples*total_epochs)]     
+            'anchor_order': [anchor_order for j in range(total_samples*total_epochs)],
+            'random_seed': [random_seed for j in range(total_samples*total_epochs)],
+            'label': [label for i in range(total_epochs*total_samples)],
+            'anchors_added': [0 for i in range(anchor_epoch*total_samples)] + \
+                                           [1 for i in range((total_epochs-anchor_epoch)*total_samples)]
         }
         
         # save optimizer settings to add to results_data after training complete
@@ -221,9 +235,6 @@ class simulator():
                 for k in range(total_samples): # once per every word
                     temp += [config[i] for j in range(epoch_start, epoch_end)] # once per every epoch
             initial_configs[key] = temp
-        
-        # add column to indicate whether anchors have been added
-        initial_configs['anchors_added'] = [0 for i in range(anchor_epoch*total_samples)] + [1 for i in range((total_epochs-anchor_epoch)*total_samples)]
         
         '''
         --------------------------------------------
@@ -255,10 +266,18 @@ class simulator():
             'correct': [],
             'error': []
         }
+        
         # starting epoch
         start_epoch = 0
+        
+        '''
+        --------------------------------------------
+        1.5/ LOAD CHECKPOINT (IF NECESSARY)
+        --------------------------------------------
+        '''
+        
         # try to load prev checkpoint if existant
-        if prev_checkpoint != 'None':
+        if prev_checkpoint != '':
             self.model.load_state_dict(prev_checkpoint['model_state_dict'])
             epochs = prev_checkpoint['epochs']
             losses = prev_checkpoint['losses']
@@ -416,12 +435,11 @@ class simulator():
         make_bar(self.probe_types, [i[-1] for i in probe_acc], "Category", "Accuracy", "Final Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Bar.jpg", show=True)
         
         # print average time taken
-        print("Average Time: ", sum(times)/len(times))
+        print("Average Time per epoch: ", sum(times)/len(times))
         
         # create csv file for results
-        date = self.rootdir.split('/')[-1].split('_')[0]
         filename = 'warping-dilation-seed-'+str(random_seed)+'-dilution-'+str(dilution)+'-order-'+str(anchor_order)+'-date-'+date+'.csv.gz' # extract file name from folder filepath
-        results_data.update(initial_configs) # include optimizer settings  
+        results_data.update(initial_configs) # include optimizer settings
         results_df = pd.DataFrame({key:pd.Series(value) for key, value in results_data.items()}) # create dataframe
         results_df.to_csv(self.rootdir+"/"+filename, index=False, compression='gzip') # save as csv in simulation folder
-        shutil.copyfile(self.rootdir+"/"+filename, self.rootdir[0:-13]+"/"+filename) # save as csv in results folder
+        shutil.copyfile(self.rootdir+"/"+filename, self.rootdir[0:-13]+"/"+filename) # copy to results folder

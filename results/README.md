@@ -19,9 +19,9 @@
 >#### Notes
 >    * `<seed> = {1}` indicates random number generator seed
 >    * `<dilation> = {1, 2, 3}` indicates N, N/2, N/3 dilation for Frequency Tests A and B
->    * `<dilation> = {0, 5, 3}` indicates `ln(10+2)`, `ln(5+2)`, `ln(3.33+2)` respectively
+>    * `<dilation> = {0, 5, 3}` indicates `ln(10+2)`, `ln(5+2)`, `ln(3.33+2)` respectively for Frequency Test C
 >    * `<order> = {1}` indicates starting anchor set
->    * *Typo*: For Frequency Test C, order is shown as 3 in the title and inside the csv file. This is a typo; the anchor order is 1.
+>    * **Typo**: For Frequency Test C, order is shown as 3 in the title and inside the csv file. This is a typo; the anchor order is 1.
 
 
 ### Notes

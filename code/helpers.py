@@ -10,6 +10,9 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Feb 20, 2020:
+      > modify make_folder to allow custom name based on label
+      > move code for finding date to simulator.py
   - Jan 17, 2020:
       > modify accuracy calculation to simply be based on highest activity
       > modify get_accuracy function to also return dictionary of items needed to save csv
@@ -39,7 +42,6 @@ import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 import os
-import datetime
 from pathlib import Path
 
 # function to get the accuracy of a particular category
@@ -160,23 +162,26 @@ def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None,
     
     return None
 
-def make_folder():
+def make_folder(date, dir_label=None):
     # create a new folder for every run
     path = Path(os.getcwd()).parent #get parent (Plaut_Model) directory filepath
-    now = datetime.datetime.now()
-    date = now.strftime("%b").lower()+now.strftime("%d")
-    i = 1
-    
-    while True:
-        try:
-            rootdir = str(path)+"/results/"+date+"_test"+'{:02d}'.format(i)
-            os.mkdir(rootdir)
-            for i in ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]:
-                os.mkdir(rootdir+"/"+i)
-            break
-        except:
-            i += 1
-
+    if dir_label == None: # if no directory label specified
+        i = 1
+        while True:
+            try:
+                rootdir = str(path)+"/results/"+date+"_test"+'{:02d}'.format(i)
+                os.mkdir(rootdir)
+                for subdir in ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]:
+                    os.mkdir(rootdir+"/"+subdir)
+                break
+            except:
+                i += 1
+    else: # if name specified
+        rootdir = str(path)+"/results/"+dir_label
+        os.mkdir(rootdir)
+        for subdir in ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]:
+            os.mkdir(rootdir+"/"+subdir)
+      
     return rootdir
 
 def save_notes(rootdir):

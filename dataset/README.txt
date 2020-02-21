@@ -17,11 +17,17 @@ frequency of the files below is given by ln(10/N + 2)
 6. anchors_swap3.csv is Anchor3, Anchor2, and Anchor1 (i.e. identical to anchors_new3.csv
 
 
-FREQUENCY TEST
+FREQUENCY TEST inside the directory /freqtestB/
 frequency of the files below is given by ln(10+2)/N
 1. anchors_new1.csv is Anchor1 only
 2. anchors_new2.csv is Anchor1 and Anchor2
 3. anchors_new3.csv is Anchor1, Anchor2, and Anchor3
+
+FREQUENCY TEST inside the directory /freqtestC/
+frequency of the files below is given by ln(10+2)/N
+1. anchors_new1_3.csv is Anchor1 only with freq=ln(3.33+2)
+2. anchors_new1_5.csv is Anchor1 only with freq=ln(5+2)
+3. anchors_new1_10.csv is Anchor1 only with freq=ln(10+2)
 
 
 OLD ANCHORS AND PROBES

@@ -6,6 +6,13 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Feb 20, 2020:
+      > add print label when simulation started
+      > update label format
+      > modify csv file name to include label
+      > pass label into make_folder helper function
+      > add code for finding date
+      > remove double confirmation for deleting data after exception
   - Feb 19, 2020:
       > add label column to initial_configs, which will be saved into the results csv
       > modify config file to include label
@@ -60,6 +67,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import time
 import shutil
+import datetime
 
 import configparser
 
@@ -81,7 +89,7 @@ class simulator():
         self.types = ["HEC", "HRI", "HFE", "LEC", "LFRI", "LFE"] # calculate accuracy of these types
         self.anc_types = ["ANC_REG", "ANC_EXC", "ANC_AMB"]
         self.probe_types = ["PRO_REG", "PRO_EXC", "PRO_AMB"]
-         
+        
         # set manual seed
         torch.manual_seed(int(self.config['setup']['random_seed']))
         
@@ -95,7 +103,7 @@ class simulator():
         self.plaut_ds = plaut_dataset([self.config['dataset']['plaut'], False])
         self.anc_ds = plaut_dataset([self.config['dataset']['anchor'], False])
         self.probe_ds = plaut_dataset([self.config['dataset']['probe'], False])
-        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], True, self.config['dataset']['anchor'], False])
+        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], False, self.config['dataset']['anchor'], False])
         # Note: adding "True" after a filepath changes frequencies to ln(2), "False" leaves frequencies as is
         
         '''
@@ -121,18 +129,12 @@ class simulator():
         try: # run training function
             self.train_function()
         except: # if interrupted by keyboard
-            print("Training Interrupted by User or Other Error")
             if input("An exception occured. Delete plots and checkpoints? [y/n] \n  > ").lower() in ['y', 'yes']:
-                if input("Are you sure? [y/n] \n  > ").lower() in ['y', 'yes']:
-                    shutil.rmtree(self.rootdir)
-                    print("Simulation results deleted.")
-                else:
-                    save_notes(self.rootdir)
-                    print("Simulation results saved.")
+                shutil.rmtree(self.rootdir)
+                print("Simulation results deleted. Error is shown below:")
             else:
                 save_notes(self.rootdir)
-                print("Simulation results saved.")
-            print("Error is shown below:")
+                print("Simulation results saved. Error is shown below:")
             raise
         else: # no exception
             print("Training Completed!")
@@ -151,20 +153,7 @@ class simulator():
         
         '''
         --------------------------------------------
-        1.1/ RESULTS FOLDER SETUP
-        --------------------------------------------
-        '''
-        # Create folder to store results
-        self.rootdir = make_folder()
-        date = self.rootdir.split('/')[-1].split('_')[0]
-        print("Test Results will be stored in: ", self.rootdir)     
-
-        # Make a copy of config file in results folder
-        shutil.copyfile("config.cfg", self.rootdir+"/config.cfg")
-
-        '''
-        --------------------------------------------
-        1.2/ LOAD CONFIG SETUP
+        1.1/ LOAD CONFIG SETUP
         --------------------------------------------
         '''
         # Load general settings from configuration file
@@ -200,17 +189,22 @@ class simulator():
         random_seed = self.config['setup']['random_seed']
         dilution = self.config['dataset']['anchor'].split('.')[-2][-1]
         anchor_order = 1 if self.config['dataset']['anchor'].split('.')[-2].split('_')[-1][0:-1] == 'new' else 3 
-
+        
         '''
         --------------------------------------------
-        1.3/ SAVE INITIAL CONFIG
+        1.2/ SAVE INITIAL CONFIG
         --------------------------------------------
         '''
         # calculate total # of samples in dataset
         total_samples = len(self.plaut_ds)+len(self.anc_ds)+len(self.probe_ds)
         
+        # date
+        now = datetime.datetime.now()
+        date = now.strftime("%b").lower()+now.strftime("%d")
+        
         # create label for simulation
-        label = label+"-S{}D{}O{}".format(random_seed, dilution, anchor_order)+date.upper()
+        label = label+"-S{}D{}O{}-".format(random_seed, dilution, anchor_order)+date
+        print("Label for simulation:", label)
         
         # save initial configurations
         initial_configs = {
@@ -235,7 +229,19 @@ class simulator():
                 for k in range(total_samples): # once per every word
                     temp += [config[i] for j in range(epoch_start, epoch_end)] # once per every epoch
             initial_configs[key] = temp
-        
+            
+        '''
+        --------------------------------------------
+        1.3/ RESULTS FOLDER SETUP
+        --------------------------------------------
+        '''
+        # Create folder to store results
+        self.rootdir = make_folder(date=date, dir_label=label)
+        print("Test Results will be stored in: ", self.rootdir)     
+
+        # Make a copy of config file in results folder
+        shutil.copyfile("config.cfg", self.rootdir+"/config.cfg")
+  
         '''
         --------------------------------------------
         1.4/ MODEL INITIALIZATION
@@ -438,8 +444,8 @@ class simulator():
         print("Average Time per epoch: ", sum(times)/len(times))
         
         # create csv file for results
-        filename = 'warping-dilation-seed-'+str(random_seed)+'-dilution-'+str(dilution)+'-order-'+str(anchor_order)+'-date-'+date+'.csv.gz' # extract file name from folder filepath
+        filename = 'warping-dilation-'+label+'.csv.gz' # extract file name from folder filepath
         results_data.update(initial_configs) # include optimizer settings
         results_df = pd.DataFrame({key:pd.Series(value) for key, value in results_data.items()}) # create dataframe
         results_df.to_csv(self.rootdir+"/"+filename, index=False, compression='gzip') # save as csv in simulation folder
-        shutil.copyfile(self.rootdir+"/"+filename, self.rootdir[0:-13]+"/"+filename) # copy to results folder
+        shutil.copyfile(self.rootdir+"/"+filename, "/"+"/".join(self.rootdir.split('/')[:-1])+"/"+filename) # copy to results folder

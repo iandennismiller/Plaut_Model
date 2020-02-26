@@ -1,5 +1,12 @@
 # Results
 
+### Feb 24-26, 2020
+>#### Base Simulation
+> * **Description**: "Base" simulation after updating loss calculations (i.e. removing scaling down of loss)
+> * **Simulation Folders**: `BASE-SXDXOX-feb2X` inside the `BASE-feb24-26` directory
+> * **`.gz` files**: inside `BASE-feb24-26` directory, and also inside simulation folders, with format
+`warping-dilation-BASE-SXDXOX-feb2X.csv.gz`
+
 ### Notes
 > * For simulations run after Feb 20, 2020, a simulation specific "label" will be used to distinguish unique simulations.
 > * As a result, simulation folders will be named with the following format: `<label>-SXDXOX-<date>` where `X` is a placeholder for random seed, dilation, and anchor order.

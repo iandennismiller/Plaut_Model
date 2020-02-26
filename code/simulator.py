@@ -6,6 +6,12 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Feb 23, 2020:
+      > update loss calculation to remove scaling:
+          BEFORE:                                            AFTER:
+          loss = loss*freq                                   loss = loss*freq
+          loss = loss.sum()/(freq.sum()*loss.shape[1])       loss = loss.sum()
+          loss.backward()                                    
   - Feb 20, 2020:
       > add print label when simulation started
       > update label format
@@ -37,7 +43,7 @@ Revisions:
   - Jan 08, 2020:
       > typo: under __init__, self.types = [...] fixed (LFEEXPT -> LFE) as LFEEXPT type does not exist after collapsing
       > dataset filepaths have been replaced with config file inputs
-      > modify calculation of loss to do a proper weighted mean:
+      > modify calculation of loss to do a weighted mean:
             BEFORE:                   AFTER:
             loss = loss*freq          loss = loss*freq 
             loss = loss.mean()        loss = loss.sum()/(freq.sum()*loss.shape[1])
@@ -103,7 +109,7 @@ class simulator():
         self.plaut_ds = plaut_dataset([self.config['dataset']['plaut'], False])
         self.anc_ds = plaut_dataset([self.config['dataset']['anchor'], False])
         self.probe_ds = plaut_dataset([self.config['dataset']['probe'], False])
-        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], False, self.config['dataset']['anchor'], False])
+        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], True, self.config['dataset']['anchor'], False])
         # Note: adding "True" after a filepath changes frequencies to ln(2), "False" leaves frequencies as is
         
         '''
@@ -360,7 +366,7 @@ class simulator():
                 loss = criterion(outputs, labels)
                 
                 loss = loss*freq
-                loss = loss.sum()/(freq.sum()*loss.shape[1]) # find *weighted* mean of loss
+                loss = loss.sum() # find *weighted* mean of loss
                 
                 avg_loss += loss.item()
                 loss.backward()

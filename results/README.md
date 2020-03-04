@@ -3,9 +3,10 @@
 ### Mar 03-04, 2020
 > #### Frequency/Dilution Tests
 > * **Description**: Simulations crossing 3 dilution levels with 3 frequency levels
-> * **Simulation Folders**: `FREQTESTXX-SXDXOX-mar0X` inside the `FREQTEST-mar03-04` directory
+> * **Simulation Folders**: `FREQTESTXX-S1DYO1-mar0Z` inside the `FREQTEST-mar03-04` directory
 > * **`.gz` files**: inside `FREQTEST-mar03-04` directory, and also inside simulation folders, with format
-`warping-dilation-FREQTESTXX-SXDXOX-mar0X.csv.gz`
+`warping-dilation-FREQTESTXX-S1DYO1-mar0Z.csv.gz`
+> * **Note**: `XX = {10, 20, 30}` for frequency level; `Y = {1, 2, 3}` for dilution level; `Z = {3, 4}` for date
 
 
 ### Feb 24-26, 2020

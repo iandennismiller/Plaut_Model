@@ -1,7 +1,15 @@
 # Results
 
+### Mar 03-04, 2020
+> #### Frequency/Dilution Tests
+> * **Description**: Simulations crossing 3 dilution levels with 3 frequency levels
+> * **Simulation Folders**: `FREQTESTXX-SXDXOX-mar0X` inside the `FREQTEST-mar03-04` directory
+> * **`.gz` files**: inside `FREQTEST-mar03-04` directory, and also inside simulation folders, with format
+`warping-dilation-FREQTESTXX-SXDXOX-mar0X.csv.gz`
+
+
 ### Feb 24-26, 2020
->#### Base Simulation
+> #### Base Simulation
 > * **Description**: "Base" simulation after updating loss calculations (i.e. removing scaling down of loss)
 > * **Simulation Folders**: `BASE-SXDXOX-feb2X` inside the `BASE-feb24-26` directory
 > * **`.gz` files**: inside `BASE-feb24-26` directory, and also inside simulation folders, with format
@@ -16,35 +24,35 @@
 `/results/<label>-<date>`
 
 ### Feb 20, 2020
->#### Base Simulation
+> #### Base Simulation
 > * **Description**: "Base" simulation for comparison purposes - essentially identical to the ones in the Feb 2020 paper, with the exception of resetting Adam after adding anchors
 > * **Simulation Folders**: `BASE-SXDXOX-feb20` inside the `BASE-feb20` directory
 > * **`.gz` files**: inside `BASE-feb20` directory, and also inside simulation folders, with format
 `warping-dilation-BASE-SXDXOX-feb20.csv.gz`
 
->#### Fixed Plaut Frequency
+> #### Fixed Plaut Frequency
 > * **Description**: Frequency for Plaut dataset is kept unchanged (instead of replacing with `ln(2)`) after the anchors are added
 > * **Simulation Folders**: `FPF-SXDXOX-feb20` inside the `FPF-feb20` directory
 > * **`.gz` files**: inside `FPF-feb20` directory, and also inside simulation folders, with format
 `warping-dilation-FPF-SXDXOX-feb20.csv.gz`
 
 ### Feb 19, 2020
->#### Frequency Test A
+> #### Frequency Test A
 > * **Description**: Simulations with frequency calculated as `ln(10/N+2)`
-> * **Simulation Folders**: /freq_tests/feb19_test04 to /freq_tests/feb19_test06
+> * **Simulation Folders**: feb19_test04 to feb19_test06 inside /FREQTEST-jan19
 > * **`.gz` files**: inside simulation folders, with format `warping-dilation-FREQTESTA-S<seed>D<dilation>O<order>FEB19.csv.gz`
 
->#### Frequency Test B
+> #### Frequency Test B
 > * **Description**: Simulations with frequency calculated as `ln(10+2)/N`
-> * **Simulation Folders**: /freq_tests/feb19_test01 to /freq_tests/feb19_test03
+> * **Simulation Folders**: feb19_test01 to feb19_test03 inside /FREQTEST-jan19
 > * **`.gz` files**: inside simulation folders, with format `warping-dilation-FREQTESTB-S<seed>D<dilation>O<order>FEB19.csv.gz`
 
->#### Frequency Test C
+> #### Frequency Test C
 > * **Description**: Simulations with only anchor 1, and frequencies `ln(10+2)`, `ln(5+2)`, `ln(3.33+2)`
-> * **Simulation Folders**: /freq_tests/feb19_test07 to /freq_tests/feb19_test09
+> * **Simulation Folders**: feb19_test07 to feb19_test09 inside /FREQTEST-jan19
 > * .gz files: inside simulation folders, with format `warping-dilation-FREQTESTC-S<seed>D<dilation>O<order>FEB19.csv.gz`
 
->#### Notes
+> #### Notes
 >    * `<seed> = {1}` indicates random number generator seed
 >    * `<dilation> = {1, 2, 3}` indicates N, N/2, N/3 dilation for Frequency Tests A and B
 >    * `<dilation> = {0, 5, 3}` indicates `ln(10+2)`, `ln(5+2)`, `ln(3.33+2)` respectively for Frequency Test C

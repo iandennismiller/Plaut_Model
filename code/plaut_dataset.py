@@ -6,6 +6,9 @@ Description: Class for custom dataset for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Mar 03, 2020:
+      > modify __init__ in plaut_dataset to allow modification of frequency
+      > separate filepaths from frequencies in parameter passing
   - Jan 02, 2019: convert datatype to float here, instead of during training
   - Nov 28, 2019: modify plaut_dataset to add option to "zero" frequencies -> i.e. set to log(2)
   - Nov 27, 2019: create file, copy original class from plaut_model.ipynb file
@@ -28,6 +31,7 @@ grapheme_vowel = ['E', 'I', 'O', 'U', 'A', 'Y', 'AI', 'AU', 'AW', 'AY', 'EA', 'E
 grapheme_codas = ['H', 'R', 'L', 'M', 'N', 'B', 'D', 'G', 'C', 'X', 'F', 'V', 'J', 'S', 'Z', 'P', 'T', 'K', 'Q', 'BB', 'CH', 'CK', 'DD', 'DG',
                   'FF', 'GG', 'GH', 'GN', 'KS', 'LL', 'NG', 'NN', 'PH', 'PP', 'PS', 'RR', 'SH', 'SL', 'SS', 'TCH', 'TH', 'TS', 'TT', 'ZZ', 'U', 'E', 'ES', 'ED']
 
+
 # Mappings for Phonemes
 phoneme_onset = ['s', 'S', 'C', 'z', 'Z', 'j', 'f', 'v', 'T', 'D',
                  'p', 'b', 't', 'd', 'k', 'g', 'm', 'n', 'h', 'l', 'r', 'w', 'y']
@@ -38,18 +42,23 @@ phoneme_codas = ['r', 'l', 'm', 'n', 'N', 'b', 'g', 'd', 'ps', 'ks',
 
 
 class plaut_dataset(Dataset):
-    def __init__(self, filepaths):
+    def __init__(self, filepaths, frequencies):
         # initialize dataframe from csv file
         self.df = pd.DataFrame()
-        for i in range(0, len(filepaths), 2):
-            self.df = pd.concat([self.df, pd.read_csv(filepaths[i])])
-            if filepaths[i+1] == True:
-                self.df["log_freq"] = np.log(2)
+        for file, freq in zip(filepaths, frequencies):
+            temp_df = pd.read_csv(file)
+            
+            if freq != None:
+                temp_df["log_freq"] = freq
+                
+            self.df = pd.concat([self.df, temp_df])
+            
         self.df = self.df.reset_index(drop=True) # reset the index
         
         # get grapheme and phoneme vectors from orthography and phonology
         self.df["graphemes"] = self.df["orth"].apply(lambda x: get_graphemes(x))
         self.df["phonemes"] = self.df["phon"].apply(lambda x: get_phonemes(x))
+        
 
     def __len__(self):
         # return the number of samples in dataframe
@@ -66,6 +75,7 @@ class plaut_dataset(Dataset):
                 "frequency": torch.tensor(self.df.loc[index, "log_freq"], dtype=torch.float), # the frequency AFTER log transform
                 "graphemes": torch.tensor(self.df.loc[index, 'graphemes'], dtype=torch.float), # vector of graphemes representing orthography
                 "phonemes": torch.tensor(self.df.loc[index, 'phonemes'], dtype=torch.float) }# vector of phonemes representing phonology
+    
 
 
 def get_graphemes(word):

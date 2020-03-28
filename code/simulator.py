@@ -6,6 +6,9 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Mar 03, 2020:
+      > update usage of plaut_dataset function
+      > update file label to allow manual override of anchor dilation
   - Feb 23, 2020:
       > update loss calculation to remove scaling:
           BEFORE:                                            AFTER:
@@ -74,6 +77,7 @@ from torch.utils.data import DataLoader
 import time
 import shutil
 import datetime
+import numpy as np
 
 import configparser
 
@@ -106,11 +110,24 @@ class simulator():
         > multiple csv files can be concatenated in format: ["filename1", True/False, "filename2", True/False, ...]
         > True/False indicates whether to override frequencies to log(2)
         '''
-        self.plaut_ds = plaut_dataset([self.config['dataset']['plaut'], False])
-        self.anc_ds = plaut_dataset([self.config['dataset']['anchor'], False])
-        self.probe_ds = plaut_dataset([self.config['dataset']['probe'], False])
-        self.plaut_anc_ds = plaut_dataset([self.config['dataset']['plaut'], True, self.config['dataset']['anchor'], False])
-        # Note: adding "True" after a filepath changes frequencies to ln(2), "False" leaves frequencies as is
+        
+        plaut_filepath = self.config['dataset']['plaut']
+        anc_filepath = self.config['dataset']['anchor']
+        probe_filepath = self.config['dataset']['probe']
+        anc_freq = self.config['dataset']['anc_freq']
+        anc_freq = None if anc_freq == "" else float(anc_freq)
+        anc_dilation = self.config['dataset']['anc_dilation']
+        anc_dilation = None if anc_dilation == "" else int(anc_dilation)
+        
+        if anc_freq and anc_dilation:
+            anc_freq = np.log(anc_freq + 2) / anc_dilation
+        
+        # plaut_dataset takes two parameters: filepaths, frequencies
+        self.plaut_ds = plaut_dataset([plaut_filepath], [None])
+        self.anc_ds = plaut_dataset([anc_filepath], [None])
+        self.probe_ds = plaut_dataset([probe_filepath], [None])
+        self.plaut_anc_ds = plaut_dataset([plaut_filepath, anc_filepath], [None, anc_freq])
+       
         
         '''
         INITIALIZE DATALOADERS
@@ -193,7 +210,11 @@ class simulator():
         # dilution: 1 means N, 2 means N/2, 3 means N/3
         # anchor order: 1 means 1->2->3, 3 means 3->2->1
         random_seed = self.config['setup']['random_seed']
-        dilution = self.config['dataset']['anchor'].split('.')[-2][-1]
+        if self.config['dataset']['anc_dilation'] != "":
+            dilution = int(self.config['dataset']['anc_dilation'])
+        else:
+            dilution = self.config['dataset']['anchor'].split('.')[-2][-1]
+
         anchor_order = 1 if self.config['dataset']['anchor'].split('.')[-2].split('_')[-1][0:-1] == 'new' else 3 
         
         '''

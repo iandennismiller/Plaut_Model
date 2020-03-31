@@ -6,6 +6,10 @@ Description: Code for running simulation to train the model, and saving results
 Date Created: January 02, 2020
 
 Revisions:
+  - Mar 30, 2020:
+      > move save_checkpoint function to helpers.py
+      > add testing function
+      > move load_data to be executed in train function rather than init function
   - Mar 03, 2020:
       > update usage of plaut_dataset function
       > update file label to allow manual override of anchor dilation
@@ -85,15 +89,21 @@ from plaut_dataset import plaut_dataset
 from model import plaut_net
 from helpers import *
 
+phoneme_onset = np.array(['s', 'S', 'C', 'z', 'Z', 'j', 'f', 'v', 'T', 'D',
+                 'p', 'b', 't', 'd', 'k', 'g', 'm', 'n', 'h', 'l', 'r', 'w', 'y'])
+phoneme_vowel = np.array(['a', 'e', 'i', 'o', 'u', '@',
+                 '^', 'A', 'E', 'I', 'O', 'U', 'W', 'Y'])
+phoneme_codas = np.array(['r', 'l', 'm', 'n', 'N', 'b', 'g', 'd', 'ps', 'ks',
+                 'ts', 's', 'z', 'f', 'v', 'p', 'k', 't', 'S', 'Z', 'T', 'D', 'C', 'j'])
+
+
+
 class simulator():
     def __init__(self):
          
         # Load configuration file
         self.config = configparser.ConfigParser()
         self.config.read("config.cfg")
-
-        # load dataset
-        self.load_data()
         
         # Define word types to calculate accuracy for
         self.types = ["HEC", "HRI", "HFE", "LEC", "LFRI", "LFE"] # calculate accuracy of these types
@@ -136,20 +146,10 @@ class simulator():
         self.anc_loader = DataLoader(self.anc_ds, batch_size=len(self.anc_ds), num_workers=0)
         self.probe_loader = DataLoader(self.probe_ds, batch_size=len(self.probe_ds), num_workers=0)
         self.plaut_anc_loader = DataLoader(self.plaut_anc_ds, batch_size=len(self.plaut_anc_ds), num_workers=0)
-    
-    def save_checkpoint(self, optimizer, epochs, losses, acc, pro_acc, anc_acc):
-        torch.save({
-            'epochs': epochs,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'losses': losses,
-            'acc': acc,
-            'pro_acc': pro_acc,
-            'anc_acc': anc_acc
-        }, self.rootdir+'/checkpoint_'+str(epochs[-1])+'.tar')
 
     def train(self):
         try: # run training function
+            self.load_data()
             self.train_function()
         except: # if interrupted by keyboard
             if input("An exception occured. Delete plots and checkpoints? [y/n] \n  > ").lower() in ['y', 'yes']:
@@ -186,6 +186,7 @@ class simulator():
         plot_freq = int(self.config['setup']['plot_freq'])
         save_freq = int(self.config['setup']['save_freq'])
         cp_epochs = [int(x) for x in self.config['setup']['checkpoint_epochs'].split(',')]
+        cp_name = self.config['setup']['checkpoint_name']
         prev_checkpoint = self.config['setup']['prev_checkpoint']
         label = self.config['setup']['label']
         
@@ -233,6 +234,9 @@ class simulator():
         label = label+"-S{}D{}O{}-".format(random_seed, dilution, anchor_order)+date
         print("Label for simulation:", label)
         
+        if cp_name == '':
+            cp_name = label
+        
         # save initial configurations
         initial_configs = {
             'dilution': [dilution for j in range(total_samples*total_epochs)],
@@ -264,7 +268,7 @@ class simulator():
         '''
         # Create folder to store results
         self.rootdir = make_folder(date=date, dir_label=label)
-        print("Test Results will be stored in: ", self.rootdir)     
+        print("Train Results will be stored in: ", self.rootdir)     
 
         # Make a copy of config file in results folder
         shutil.copyfile("config.cfg", self.rootdir+"/config.cfg")
@@ -419,7 +423,7 @@ class simulator():
             
             # checkpoint if specified
             if epoch+1 in cp_epochs:
-                self.save_checkpoint(optimizer, epochs, losses, acc, probe_acc, anc_acc)
+                save_checkpoint(cp_name, self.rootdir, self.model, optimizer, epochs, losses, acc, probe_acc, anc_acc)
                         
             '''
             --------------------------------------------
@@ -476,3 +480,108 @@ class simulator():
         results_df = pd.DataFrame({key:pd.Series(value) for key, value in results_data.items()}) # create dataframe
         results_df.to_csv(self.rootdir+"/"+filename, index=False, compression='gzip') # save as csv in simulation folder
         shutil.copyfile(self.rootdir+"/"+filename, "/"+"/".join(self.rootdir.split('/')[:-1])+"/"+filename) # copy to results folder
+        return None
+    
+    def test(self):
+        # Load configuration file
+        self.test_config = configparser.ConfigParser()
+        self.test_config.read("test_config.cfg")
+        label = self.test_config['setup']['label']
+        
+        if label == '':
+            label = input("Enter label for simulation:")
+        
+        
+        # date
+        now = datetime.datetime.now()
+        date = now.strftime("%b").lower()+now.strftime("%d")
+        
+        # create label for simulation
+        label = label+'-'+date
+        print("Label for simulation:", label)
+        
+        # Create folder to store results
+        self.rootdir = make_folder(date=date, dir_label=label)
+        print("Test Results will be stored in: ", self.rootdir)     
+
+        # Make a copy of config file in results folder
+        shutil.copyfile("test_config.cfg", self.rootdir+"/test_config.cfg")
+        
+        # (re)-initialize model
+        self.model = plaut_net()
+        
+        # load checkpoint and model parameters
+        checkpoint = torch.load(self.test_config['setup']['checkpoint'])
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        
+        # create dataloader for test data
+        self.test_ds = plaut_dataset([self.test_config['setup']['test']], [None])
+        self.test_loader = DataLoader(self.test_ds, batch_size=len(self.test_ds), num_workers=0)
+        
+        # test model
+        for i, data in enumerate(self.test_loader):
+            inputs = data["graphemes"]
+            
+            outputs = self.model(inputs)
+        
+        # change outputs to numpy array
+        outputs = outputs.detach().numpy()
+        
+        # save csv file with original outputs
+        output_df = pd.DataFrame(data=outputs, columns=['o'+str(i) for i in range(outputs.shape[1])])
+        output_df.index.name = 'word_id'
+        
+        output_df = self.test_ds.df[['word_id','orth']].merge(output_df, on='word_id').set_index('word_id')
+        
+        output_df.to_csv(self.rootdir+'/model_outputs.csv')
+        
+        
+        # calculate entropy
+        entropy = outputs * np.log2(outputs) + (1-outputs)*np.log2(1-outputs) - np.log2(0.5)
+        
+        entropy_df = pd.DataFrame(data=entropy, columns=['e'+str(i) for i in range(entropy.shape[1])])
+        entropy_df.index.name = 'word_id'
+        
+        entropy_df = self.test_ds.df[['word_id','orth']].merge(entropy_df, on='word_id').set_index('word_id')
+        
+        entropy_df.to_csv(self.rootdir+'/entropy.csv')
+        
+        # split output into onset, vowel, coda
+        onset = outputs[:, 0:23]
+        vowel = outputs[:, 23:37]
+        codas = outputs[:, 37:61]
+        
+        # find most active phoneme, and unit activity
+        max_onset = phoneme_onset[onset.argmax(axis=1)]
+        max_vowel = phoneme_vowel[vowel.argmax(axis=1)]
+        max_codas = phoneme_codas[codas.argmax(axis=1)]
+        
+        max_onset_activity = onset.max(axis=1)
+        max_vowel_activity = vowel.max(axis=1)
+        max_codas_activity = codas.max(axis=1)
+        
+        # sum entropy across different units for onset, vowel, coda
+        e_onset = entropy[:, 0:23].sum(axis=1)
+        e_vowel = entropy[:, 23:37].sum(axis=1)
+        e_codas = entropy[:, 37:61].sum(axis=1)
+        
+        results_data = {'most_active_onset': max_onset,
+                        'most_active_onset_value': max_onset_activity,
+                        'entropy_sum_onset': e_onset,
+                        'most_active_vowel': max_vowel,
+                        'most_active_vowel_value': max_vowel_activity,
+                        'entropy_sum_vowel': e_vowel,
+                        'most_active_coda': max_codas,
+                        'most_active_coda_value': max_codas_activity,
+                        'entropy_sum_coda': e_codas}
+        
+        results_df = pd.DataFrame(data=results_data)
+        results_df.index.name = 'word_id'
+        
+        results_df = self.test_ds.df[['word_id', 'orth']].merge(results_df, on='word_id').set_index('word_id')
+        
+        results_df.to_csv(self.rootdir+'/results.csv')
+        
+        
+        
+        

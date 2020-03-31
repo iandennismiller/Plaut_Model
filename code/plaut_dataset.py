@@ -6,6 +6,10 @@ Description: Class for custom dataset for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Mar 30, 2020:
+      > In get_graphemes: fix error that would occur if word started with 'Y'
+      > Before: words that start with Y would have the Y be a vowel
+      > After: Y is now placed as onset
   - Mar 03, 2020:
       > modify __init__ in plaut_dataset to allow modification of frequency
       > separate filepaths from frequencies in parameter passing
@@ -46,7 +50,7 @@ class plaut_dataset(Dataset):
         # initialize dataframe from csv file
         self.df = pd.DataFrame()
         for file, freq in zip(filepaths, frequencies):
-            temp_df = pd.read_csv(file)
+            temp_df = pd.read_csv(file, na_filter=False)
             
             if freq != None:
                 temp_df["log_freq"] = freq
@@ -75,9 +79,8 @@ class plaut_dataset(Dataset):
                 "frequency": torch.tensor(self.df.loc[index, "log_freq"], dtype=torch.float), # the frequency AFTER log transform
                 "graphemes": torch.tensor(self.df.loc[index, 'graphemes'], dtype=torch.float), # vector of graphemes representing orthography
                 "phonemes": torch.tensor(self.df.loc[index, 'phonemes'], dtype=torch.float) }# vector of phonemes representing phonology
+
     
-
-
 def get_graphemes(word):
     word = str(word).upper() # convert all text to capitals first
     if word == "NAN": # the word null automatically gets imported as "NaN" in dataframe, so fix that
@@ -91,7 +94,8 @@ def get_graphemes(word):
     # for onset: essentially "turn on" corresponding slots for onsets until a vowel is reached
     for i in range(len(word)):
         if word[i] in grapheme_vowel: # vowel found, move on
-            break
+            if not (i == 0 and word[i] == 'Y'):
+                break
         if word[i] in grapheme_onset: # single-letter grapheme found
             onset[grapheme_onset.index(word[i])] = 1
         if word[i:i+2] in grapheme_onset: # double-letter grapheme found

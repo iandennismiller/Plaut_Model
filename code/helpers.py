@@ -10,6 +10,8 @@ Description: Helper Functions for Plaut Model
 Date Created: November 27, 2019
 
 Revisions:
+  - Mar 30, 2020:
+      > add save_checkpoint function (moved from simulator.py
   - Feb 20, 2020:
       > modify make_folder to allow custom name based on label
       > move code for finding date to simulator.py
@@ -194,4 +196,20 @@ def save_notes(rootdir):
         while notes != "":
             writer.write(" > "+notes+"\n")
             notes = input(" > ")
+    return None
+
+def save_checkpoint(cp_name, rootdir, model, optimizer, epochs, losses, acc, pro_acc, anc_acc):
+    # extract checkpoint directory
+    cp_dir = rootdir[0:rootdir.index('results')]+'checkpoints/'
+    
+    torch.save({
+        'epochs': epochs,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'losses': losses,
+        'acc': acc,
+        'pro_acc': pro_acc,
+        'anc_acc': anc_acc
+    }, cp_dir+cp_name+'_epoch_'+str(epochs[-1])+'.tar')
+    
     return None

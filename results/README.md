@@ -6,7 +6,8 @@
 > * **Simulation Folder**: `ALLCOMB-mar30`
 > * `results.csv`: 1) most active onset/vowel/coda for each word; 2) unit activity for most active phonemes; 3) entropy
 > * `model_outputs.csv`: original output values from model
-> * `entropy.csv`: entropy values based on original output values, calculated using the formula $$a$$
+> * `entropy.csv`: entropy values based on original output values, calculated using the formula `S = p*log2(p) + (1-p)*log2(1-p) - log2(0.5)`
+
 
 ### Mar 03-04, 2020
 > #### Frequency/Dilution Tests

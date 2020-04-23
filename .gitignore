@@ -5,4 +5,5 @@
 /results/**/Probe Accuracy
 /results/**/Training Accuracy
 /results/**/Training Loss
-
+*.pyc
+__pycache__/

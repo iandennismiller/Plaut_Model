@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.insert(0, '.')
+sys.path.insert(0, 'lib')
 
 import click
 import matplotlib.pyplot as plt
-from code import simulator
+from pmsp import simulator
 
 
 @click.group()
@@ -14,9 +14,8 @@ def cli():
 
 @click.command('run', short_help='Run simulation.')
 def run():
-    sim = simulator()
+    sim = simulator(filename='etc/config-basic.cfg')
     sim.train()
-    sim.test()
 
 cli.add_command(run)
 

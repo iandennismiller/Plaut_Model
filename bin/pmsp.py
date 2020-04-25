@@ -5,7 +5,7 @@ sys.path.insert(0, 'lib')
 
 import click
 import matplotlib.pyplot as plt
-from pmsp import simulator
+from pmsp.simulator import simulator
 
 
 @click.group()

@@ -1,9 +1,9 @@
 # PMSP
 
 .PHONY: all
-cd ..all:
-	python3 code/simulator.py
-	echo OK
+all:
+	bin/pmsp.py run
+	@echo OK
 
 .PHONY: requirements
 requirements:

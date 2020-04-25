@@ -45,6 +45,7 @@ import torch
 from matplotlib import pyplot as plt
 import os
 from pathlib import Path
+import shutil
 
 # function to get the accuracy of a particular category
 def get_accuracy(model, data_loader, cat=['All'], vowels_only=False):
@@ -164,9 +165,11 @@ def make_bar(x_data, y_data, x_label, y_label, title, save=False, filepath=None,
     
     return None
 
-def make_folder(date, dir_label=None):
+def make_folder(date, dir_label=None, cfg_filename="config.cfg"):
     # create a new folder for every run
-    path = Path(os.getcwd()).parent #get parent (Plaut_Model) directory filepath
+    # path = Path(os.getcwd()).parent #get parent (Plaut_Model) directory filepath
+    path = Path(os.getcwd())
+
     if dir_label == None: # if no directory label specified
         i = 1
         while True:
@@ -183,7 +186,10 @@ def make_folder(date, dir_label=None):
         os.mkdir(rootdir)
         for subdir in ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]:
             os.mkdir(rootdir+"/"+subdir)
-      
+
+    # Make a copy of config file in results folder
+    shutil.copyfile(cfg_filename, rootdir+"/config.cfg")
+
     return rootdir
 
 def save_notes(rootdir):

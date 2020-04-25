@@ -85,9 +85,9 @@ import numpy as np
 
 import configparser
 
-from plaut_dataset import plaut_dataset
-from model import plaut_net
-from helpers import *
+from .plaut_dataset import plaut_dataset
+from .model import plaut_net
+from .helpers import *
 
 phoneme_onset = np.array(['s', 'S', 'C', 'z', 'Z', 'j', 'f', 'v', 'T', 'D',
                  'p', 'b', 't', 'd', 'k', 'g', 'm', 'n', 'h', 'l', 'r', 'w', 'y'])
@@ -101,6 +101,8 @@ phoneme_codas = np.array(['r', 'l', 'm', 'n', 'N', 'b', 'g', 'd', 'ps', 'ks',
 class simulator():
     def __init__(self, filename='config.cfg'):
          
+        self.cfg_filename = filename
+
         # Load configuration file
         self.config = configparser.ConfigParser()
         self.config.read(filename)
@@ -152,6 +154,7 @@ class simulator():
             self.load_data()
             self.train_function()
         except: # if interrupted by keyboard
+            raise
             if input("An exception occured. Delete plots and checkpoints? [y/n] \n  > ").lower() in ['y', 'yes']:
                 shutil.rmtree(self.rootdir)
                 print("Simulation results deleted. Error is shown below:")
@@ -267,11 +270,8 @@ class simulator():
         --------------------------------------------
         '''
         # Create folder to store results
-        self.rootdir = make_folder(date=date, dir_label=label)
+        self.rootdir = make_folder(date=date, dir_label=label, cfg_filename=self.cfg_filename)
         print("Train Results will be stored in: ", self.rootdir)     
-
-        # Make a copy of config file in results folder
-        shutil.copyfile("config.cfg", self.rootdir+"/config.cfg")
   
         '''
         --------------------------------------------
@@ -438,7 +438,7 @@ class simulator():
                     ["Loss", "Accuracy", "Accuracy", "Accuracy"], \
                     ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]):
                     
-                    make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+"/epoch_"+str(epoch+1)+".jpg", show=True)
+                    make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+"/epoch_"+str(epoch+1)+".jpg", show=self.config['setup']['show_plots'])
             '''
             --------------------------------------------
             2.4/ PRINTING OF STATISTICS
@@ -464,12 +464,12 @@ class simulator():
             ["Loss", "Accuracy", "Accuracy", "Accuracy"], \
             ["Training Loss", "Training Accuracy", "Anchor Accuracy", "Probe Accuracy"]):
                     
-            make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+" Final.jpg", show=True)
+            make_plot(epochs, ydata, labels, "Epoch", ylabel, title, anchor=int(self.config['setup']['anchor_epoch']), save=True, filepath=self.rootdir+"/"+title+" Final.jpg", show=self.config['setup']['show_plots'])
         
         # plot final accuracy bar plots and save
-        make_bar(self.types, [i[-1] for i in acc], "Category", "Accuracy", "Final Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Bar.jpg", show=True)
-        make_bar(self.anc_types, [i[-1] for i in anc_acc], "Category", "Accuracy", "Final Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Bar.jpg", show=True)
-        make_bar(self.probe_types, [i[-1] for i in probe_acc], "Category", "Accuracy", "Final Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Bar.jpg", show=True)
+        make_bar(self.types, [i[-1] for i in acc], "Category", "Accuracy", "Final Training Accuracy", save=True, filepath=self.rootdir+"/Training Accuracy Bar.jpg", show=self.config['setup']['show_plots'])
+        make_bar(self.anc_types, [i[-1] for i in anc_acc], "Category", "Accuracy", "Final Anchor Accuracy", save=True, filepath=self.rootdir+"/Anchor Accuracy Bar.jpg", show=self.config['setup']['show_plots'])
+        make_bar(self.probe_types, [i[-1] for i in probe_acc], "Category", "Accuracy", "Final Probe Accuracy", save=True, filepath=self.rootdir+"/Probe Accuracy Bar.jpg", show=self.config['setup']['show_plots'])
         
         # print average time taken
         print("Average Time per epoch: ", sum(times)/len(times))
